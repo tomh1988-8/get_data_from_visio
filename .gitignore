@@ -1,0 +1,12 @@
+
+# visio files
+*.vsdx
+
+# R files
+*.Rhistory
+*.Rproj
+*.Rdata
+
+# excel and csv
+*.xlsx
+*.csv

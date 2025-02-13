@@ -1,0 +1,198 @@
+---
+title: "Using AI"
+author: "Tom H"
+format: 
+  html:
+    theme: simplex
+editor: visual
+---
+
+## Making AI work for you
+
+This demonstration shows how to increase productivity using AI for coding, whether it be for analytics, data science, or software development. Stephen JP and Sam AH have both already delivered excellent talks on what AI is, the ethical issues surrounding it's use and what ultimately this new technology means for us in the long run, so check those out. This demonstration isn't really about the why, or even the how, it's all about the how-to.
+
+## What can AI help me with?
+
+1.  Writing, anything from a shopping list to a novel.
+2.  Idea generation, anything from garden design to a new start up.
+3.  Replacing humans (for better or worse) with language functions e.g., giving advice.
+4.  Replacing traditional ML pipelines, e.g., NLP.
+5.  Coding! (inc. spreadsheet work: *it can create VBA/Google Apps Script, and now Python within Excel for the spreadsheet hardcores out there*) - Let's focus on this!
+
+## The big hitters
+
+There are now 100(0?)s of AI models available to you as a consumer. There are however, three "big hitters". They are:
+
+1.  ChatGPT 4o; OpenAI.
+2.  Claude 3.5 Sonnet; Anthropic (basically Amazon).
+3.  Gemini1.5/2.0: Google.
+
+But let's also chuck in Github Copilot, which is fantastic within the IDE. (and with that a shout out to Codeium, a very good free alternative that works within Positron).
+
+These models have some free usage with limitation and are all generally speaking fantastic coding assistants, although the free usage runs out fast. They are all typically accessed on the browser, i.e., not locally, and you chat with them using natural language "mirror mirror on the wall...".
+
+## How to talk to them
+
+I'll construct this paragraph the way I talk to the machine:
+
+OK everyone the following conversation is about conversing with AI to ensure efficient and productive outputs. That's why I framed the conversation at the start and set out the goals. I'm also keeping each sentence brief. My top tips for ensuring effective communication are:
+
+1.  Breaking prompts down into lists of instructions so that you can resolve each prompt separately if needed;
+2.  Detail the exact sort of solution you are interested in, e.g., what software, what library you want it to focus on, what school of thought you want it to adhere to, what structure you want the solution to make;
+3.  More is better, if it's structured well;
+4.  Don't accept code you don't understand - either learn what it has given you or explore solutions that make sense to you.
+5.  Have it help you check it's own work - ask for debugging code and even unit tests;
+6.  Be quite literal;
+7.  Learn the jargon of the topic you are interested in, this massively improves performance;
+8.  It's not a one-and-done - it's a back and forth;
+9.  Be clear about what it's doing well and clear about what it's not doing well.
+10. Give it as much detail as you can, e.g., giving it str(data) can massively help (where appropriate).
+11. You can tell it who it should act like and how it should respond: "I want you to pretend you are a world class data scientist with cutting edge knowledge of developing packages in R using devtools and pkgdown who is renowned for giving thoughtful and detailed explanations of all their code".
+
+## Demonstrations
+
+```{r, echo= FALSE}
+#| message: false
+#| warning: false
+
+# All clear!
+rm(list = ls())
+
+# libraries
+library(tidyverse)
+library(httr)
+library(jsonlite)
+
+```
+
+### Let's write a function using Chat GPT 4o
+
+```{r}
+#| message: false
+#| warning: false
+
+#* create dummy data to work with
+fruit_tibble <- tribble(
+  ~id, ~fruit, ~rating,
+  1, "Grapefruit", 9,
+  2, "Grapefruit", 8,
+  3, "Grapefruit", 10,
+  4, "Blueberry", 1,
+  5, "Blueberry", 2,
+  6, "Blueberry", 1,
+  7, "Apple", 5,
+  8, "Banana", 7,
+  9, "Orange", 6,
+  10, "Mango", 7,
+  11, "Pineapple", 8
+)
+
+# write a function that swaps the ratings of two rows using the row_id
+fruit_justice <- function(row_id1, row_id2) {
+  fruit_tibble <- fruit_tibble %>% mutate(rating = ifelse(id == row_id1, fruit_tibble$rating[row_id2], rating),
+                                          rating = ifelse(id == row_id2, fruit_tibble$rating[row_id1], rating))
+  return(fruit_tibble)
+}
+
+# usage example that creates a new object with swapped ratings
+fruit_tibble_swapped <- fruit_justice(4, 1)
+
+# print out a comparison of the old and new swapped numbers
+fruit_tibble %>% filter(id %in% c(4, 1))
+fruit_tibble_swapped %>% filter(id %in% c(4, 1))
+
+```
+
+### Let's talk to Mistral in R
+
+Working with local models has a few limitations but many benefits too.
+
+Pros:\
+1. All interaction is completely local - you can share sensitive data with it!
+
+2.  You can choose from 100s of models, many that are specialists for a given task.
+3.  They are free!
+4.  You can build software using them.
+5.  You can interact with them at scale in R and Python. I wouldn't say this was as easy as it could be, i'm new to it so maybe i'm missing the shortcuts.
+6.  Set up is actually very easy now, only 15 minutes using Ollama.
+
+Cons:
+
+1.  You are very much limited to the resources available on your machine, some of the large open sourced models, e.g., Llama 3 are way too big for a local machine. I recommend Mistral for a lightweight solution.
+2.  Let's be honest, the open-sourced ones that you can get running on a local machine aren't as good as GPT4/Claude3.5/Gemini.
+
+But what if you needed an AI to carry out an easy job 10,000 times using your own data - it becomes a no-brainer that you would go down this route!
+
+Don't worry about the apparent complexity of the code below, all you need to know is that you can connect to your local model in R, you need to write a bit of code to fetch the model responses, and then write a bit of code to clean up the text.
+
+```{r}
+#| message: false
+#| warning: false
+
+# ------------------------------------------------------------------------------
+# Function: get_jokes
+# Purpose: Fetch and print jokes for a given list of fruits using the Ollama API.
+# Inputs:
+#   - fruits: A character vector of fruit names.
+# Outputs:
+#   - Prints each fruit name and its corresponding joke (or an error message).
+# Requirements:
+#   - The Ollama API must be running locally at http://localhost:11434.
+#   - The 'httr' and 'jsonlite' libraries must be installed and loaded.
+# ------------------------------------------------------------------------------
+get_jokes <- function(fruits) {
+  url <- "http://localhost:11434/api/generate"  
+  
+  # Loop through each fruit and fetch a joke
+  for (fruit_name in fruits) {
+    body <- list(
+      model = "mistral",  
+      prompt = paste("Tell me a joke about", fruit_name),
+      temperature = 0.7   
+    )
+    response <- POST(url, body = body, encode = "json")
+    
+    # Check if the response was successful
+    if (http_status(response)$category == "Success") {
+      raw_content <- content(response, as = "text")  
+      
+      # Split response into lines and parse each line
+      lines <- strsplit(raw_content, "\n")[[1]]
+      joke_parts <- sapply(lines, function(line) {
+        if (nchar(line) > 0) {  
+          parsed <- fromJSON(line) 
+          return(parsed$response)  
+        }
+        return("")
+      })
+      
+      # Concatenate all parts to form the full joke
+      joke <- paste(joke_parts, collapse = "")
+      
+      # Print the fruit name and its joke
+      cat("\nFruit:", fruit_name, "\nJoke:", joke, "\n")
+    } else {
+      cat("\nFruit:", fruit_name, "\nError: Unable to fetch a joke.\n")
+    }
+  }
+}
+
+# Let's go!
+fruit_data <- c("Apple", "Banana", "Cherry")
+get_jokes(fruit_data)
+
+```
+
+## Links
+
+[ChatGPT](https://chatgpt.com)
+
+[Claude](https://claude.ai/login)
+
+[Gemini](https://gemini.google.com/app?hl=en-GB)
+
+[Install Ollama](https://www.youtube.com/watch?v=UtSSMs6ObqY)
+
+[GitHub Copilot](https://github.com/features/copilot)
+
+[Codeium](Windsurf%20Editor%20and%20Codeium%20extensions)

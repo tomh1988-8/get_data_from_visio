@@ -6,7 +6,6 @@
 *.Rhistory
 *.Rproj
 *.Rdata
-.Rproj.user/
 
 # excel and csv
 *.xlsx
